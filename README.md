@@ -1,1 +1,80 @@
-# YoutubeToMp3Fetcher
+# Description
+**YoutubeToMp3Fetcher** is a command line utility to download all audios from youtube video playlist and convert them to mp3. It uses youtube API, so to work with this script you need api-key (You can get one from there: https://console.developers.google.com).
+
+## Dependencies
+Python package dependencieas are listed in 'requirements.txt'. To install it just use 'pip'
+
+```bash
+pip install -r requirements.txt
+```
+
+The 'pydub' package requires **[ffmpeg](http://www.ffmpeg.org/) or 
+[libav](http://libav.org/)** to be installed
+
+Mac (using [homebrew](http://brew.sh)):
+
+```bash
+# libav
+brew install libav --with-libvorbis --with-sdl --with-theora
+
+####    OR    #####
+
+# ffmpeg
+brew install ffmpeg --with-libvorbis --with-ffplay --with-theora
+```
+
+Linux (using aptitude):
+
+```bash
+# libav
+apt-get install libav-tools libavcodec-extra-53
+
+####    OR    #####
+
+# ffmpeg
+apt-get install ffmpeg libavcodec-extra-53
+```
+
+Windows:
+
+1. Download and extract libav from [Windows binaries provided here](http://builds.libav.org/windows/).
+2. Add the libav `/bin` folder to your PATH envvar
+3. `pip install pydub`
+
+Information about **ffmpeg and libav** was taken from [pydub](https://github.com/jiaaro/pydub) official github page. You can chek it for more information.
+
+## Usage
+
+Required arguments:
+
+* -k --key : mandatory to access Youtube's data API. You can get one from there: https://console.developers.google.com
+* -p --playlist : youtube playlist id. You can get it from playlist url
+
+To display the full list of supported arguments, use '-h' or '--help'.
+
+```bash
+python youtubesync.py -h
+usage: youtubesync.py [-h] -k KEY -p PLAYLIST [-f FOLDER] [-q | -v | -d]
+
+This script finds all videos from Youtube given playlist, downloads it and converts to mp3.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -k KEY, --key KEY     Google Data API key.
+  -p PLAYLIST, --playlist PLAYLIST
+                        Youtube playlist id to get videos from
+  -f FOLDER, --folder FOLDER
+                        Working directory, where to download and store files,
+                        absolute path
+  -q, --quiet           Print out minimum result information, errors
+  -v, --verbose         Print out detailed information about work progress
+  -d, --debug           Print out all messages and details
+```
+
+## Example
+
+Download all audios from videos from given playlist to specified folder.
+
+```bash
+python youtubesync.py -k ... -p PLblLnDz3Peug_HDuo1mbRrqwCOl1ABa13 -f 'C:\folder\to\download' -v
+```
