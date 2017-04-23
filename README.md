@@ -1,5 +1,5 @@
 # Description
-**YoutubeToMp3Fetcher** is a command line utility to download all audios from youtube video playlist and convert them to mp3. It uses youtube API, so to work with this script you need api-key (You can get one from there: https://console.developers.google.com).
+**YoutubeToMp3Fetcher** is a command line utility to download all audios from youtube video playlist and convert them to mp3. It uses youtube API, so to work with this script you need api-key (You can get one from there: https://console.developers.google.com). It also do not creates duplicates of audios, if the same working directory will be specified all files will be synced and script will download and convert only new files in specified playlist.
 
 ## Dependencies
 Python package dependencieas are listed in 'requirements.txt'. To install it just use 'pip'
