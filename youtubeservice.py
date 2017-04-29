@@ -195,7 +195,7 @@ def download_audio_from_video(video_id_list, dir=None):
 
 			downloaded += 1
 
-		logging.info('Finished downloading audio from all videos, downloaded videos = %d', )
+		logging.info('Finished downloading audio from all videos, downloaded videos = %d', downloaded)
 
 	except Exception as ex:
 		logging.error('An error occurred while downloading audios from videos')

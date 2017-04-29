@@ -28,7 +28,9 @@ def convert_all_files_to_mp3(dir, tempdir):
 	logging.info('Converting files to mp3, working directory - "%s"', os.path.abspath(dir))
 
 	os.chdir(tempdir)
-	for audio in glob.glob(u'*.*'):
+	files = glob.glob(u'*.*')
+	files.sort(key=os.path.getmtime)
+	for audio in files:
 		convertToMp3(audio, dir)
 
 	logging.info('Finished converting files to mp3')
