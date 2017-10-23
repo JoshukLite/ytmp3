@@ -66,6 +66,7 @@ optional arguments:
   -f FOLDER, --folder FOLDER
                         Working directory, where to download and store files,
                         absolute path
+  -a ALBUM, --album     Album name to save tracks with, also makes sync only with album if exist
   -q, --quiet           Print out minimum result information, errors
   -v, --verbose         Print out detailed information about work progress
   -d, --debug           Print out all messages and details
