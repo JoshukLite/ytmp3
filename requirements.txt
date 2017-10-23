@@ -1,3 +1,4 @@
 pafy
 pydub
 youtube-dl
+mutagen
