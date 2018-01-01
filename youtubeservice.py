@@ -1,3 +1,4 @@
+import constants
 import httplib
 import logging
 import os
@@ -169,10 +170,13 @@ def get_single_video_urls(video_url):
     return url
 
 
-def download_data_from_video(video_id_list, video_dir, image_dir):
+def download_data_from_video(video_id_list, root):
     if len(video_id_list) < 1:
         logging.info("No audios to download. All items are synchronized.")
         sys.exit()
+
+    video_dir = os.path.join(root, constants.ROOT_TEMP_DIR, constants.VIDEO_TEMP_DIR)
+    image_dir = os.path.join(root, constants.ROOT_TEMP_DIR, constants.IMAGE_TEMP_DIR)
 
     logging.info('Downloading audio from all videos')
 

@@ -1,4 +1,5 @@
 import argparse
+import constants
 import logging
 import os
 import re
@@ -50,18 +51,10 @@ else:
     working_dir = re.sub('["|\']+', '', args.folder)
 
 
-VIDEO_TEMP_DIR = 'video'
-IMAGE_TEMP_DIR = 'image'
-
-temp_working_dir = os.path.join(working_dir, 'temp')
-video_tempdir = os.path.join(temp_working_dir, VIDEO_TEMP_DIR)
-image_tempdir = os.path.join(temp_working_dir, IMAGE_TEMP_DIR)
-
-
 def main():
     try:
-        clean_temp_dir(temp_working_dir, VIDEO_TEMP_DIR, IMAGE_TEMP_DIR)
-        create_temp_dir(temp_working_dir, VIDEO_TEMP_DIR, IMAGE_TEMP_DIR)
+        clean_temp_dir(working_dir)
+        create_temp_dir(working_dir)
 
         if args.playlist:
             descr = get_playlist_info(args.key, args.playlist)
@@ -71,15 +64,14 @@ def main():
         else:
             urls = get_single_video_urls(args.single)
 
-        download_data_from_video(urls, video_tempdir, image_tempdir)
+        download_data_from_video(urls, working_dir)
         last_track_number = get_last_track_number(working_dir=working_dir, album=args.album)
-        convert_all_files_to_mp3(working_dir=working_dir, video_tempdir=video_tempdir,
-                                 image_tempdir=image_tempdir, album=args.album, track_number=last_track_number)
+        convert_all_files_to_mp3(working_dir=working_dir, album=args.album, track_number=last_track_number)
     except Exception as e:
         logging.error('Something went wrong, %s', str(e))
         logging.debug(traceback.print_exc())
     finally:
-        clean_temp_dir(temp_working_dir, VIDEO_TEMP_DIR, IMAGE_TEMP_DIR)
+        clean_temp_dir(working_dir)
 
 
 if __name__ == '__main__':

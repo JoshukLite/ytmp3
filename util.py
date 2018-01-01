@@ -1,3 +1,4 @@
+import constants
 import glob
 import httplib
 import json
@@ -59,21 +60,25 @@ def get_last_track_number(working_dir, album=None):
     return max_track_number
 
 
-def convert_all_files_to_mp3(working_dir, video_tempdir, image_tempdir, album=None, track_number=0):
+def convert_all_files_to_mp3(working_dir, album=None, track_number=0):
     logging.info('Converting files to mp3, working directory - "%s"', os.path.abspath(working_dir))
+
+    video_tempdir = os.path.join(working_dir, constants.ROOT_TEMP_DIR, constants.VIDEO_TEMP_DIR)
 
     os.chdir(video_tempdir)
     files = glob.glob(u'*.*')
     files.sort(key=os.path.getmtime)
     for audio in files:
         track_number += 1
-        convert_to_mp3(audio, working_dir, image_tempdir, album, track_number)
+        convert_to_mp3(audio, working_dir, album, track_number)
 
     logging.info('Finished converting files to mp3')
 
 
-def convert_to_mp3(audio_file, working_dir, cover_dir, album_name=None, track_number=None):
+def convert_to_mp3(audio_file, working_dir, album_name=None, track_number=None):
     logging.info('Converting %s', audio_file)
+
+    cover_dir = os.path.join(working_dir, constants.ROOT_TEMP_DIR, constants.IMAGE_TEMP_DIR)
 
     filename, extension = get_filename_with_extension(audio_file)
 
@@ -94,34 +99,37 @@ def convert_to_mp3(audio_file, working_dir, cover_dir, album_name=None, track_nu
     audio.export(abs_filename, format='mp3', tags=audio_tags, cover=image_path)
 
 
-def create_temp_dir(root, *args):
+def create_temp_dir(root):
     logging.info('Creating temp dirs')
 
-    # if dir is None, use 'temp' dir to store videos and images
-    if root is None:
-        root = os.path.join(os.getcwd(), 'temp')
+    temp_subdirs = get_temp_subdirs()
 
-    os.makedirs(root)
+    root_temp = os.path.join(root, constants.ROOT_TEMP_DIR)
 
-    for temp_subdir in args:
-        os.makedirs(os.path.join(root, temp_subdir))
+    os.makedirs(root_temp)
+
+    for temp_subdir in temp_subdirs:
+        os.makedirs(os.path.join(root_temp, temp_subdir))
 
     logging.info('Finished creating temp dirs')
 
 
-def clean_temp_dir(root, *args):
+def clean_temp_dir(root):
     logging.info('Cleaning temp files')
 
-    if os.path.exists(root):
-        os.chdir(root)
+    root_temp = os.path.join(root, constants.ROOT_TEMP_DIR)
+    temp_subdirs = get_temp_subdirs()
 
-        for temp_subdir in args:
+    if os.path.exists(root_temp):
+        os.chdir(root_temp)
+
+        for temp_subdir in temp_subdirs:
             for temp_file in glob.glob(u'./{}/*.*'.format(temp_subdir)):
                 os.remove(temp_file)
             os.rmdir(temp_subdir)
 
         os.chdir('..')
-        os.rmdir(root)
+        os.rmdir(root_temp)
 
         logging.info('Finished cleaning temp files')
     else:
@@ -185,3 +193,12 @@ def download_image(temp_dir, url, video_full_name):
 
 def get_image_name(str_input):
     return hash(str_input)
+
+
+def get_temp_subdirs():
+    temp_subdirs = [
+        constants.IMAGE_TEMP_DIR,
+        constants.VIDEO_TEMP_DIR
+    ]
+
+    return temp_subdirs
