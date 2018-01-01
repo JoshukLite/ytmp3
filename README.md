@@ -82,6 +82,7 @@ Download all audios from videos from given playlist to specified folder.
 python youtubesync.py -k ... -p PLblLnDz3Peug_HDuo1mbRrqwCOl1ABa13 -f 'C:\folder\to\download' -a from_youtube -v
 ```
 
+Download audio from specific video to specified forlder
 ```bash
 python youtubesync.py -k ... -v TpIdb1ErbKk -f 'C:\folder\to\download' -v
 ```
