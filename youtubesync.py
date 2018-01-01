@@ -7,6 +7,7 @@ import traceback
 from youtubeservice import download_data_from_video
 from youtubeservice import get_playlist_info
 from youtubeservice import get_playlist_videos_url
+from youtubeservice import get_single_video_urls
 from youtubeservice import get_videos_from_playlist
 from youtubeservice import synchronize_audios
 
@@ -19,9 +20,12 @@ from util import get_last_track_number
 parser = argparse.ArgumentParser(description='This script finds all videos from Youtube given playlist')
 
 parser.add_argument('-k', '--key', dest='key', action='store', required=True, help='Google Data API key.')
-parser.add_argument('-p', '--playlist', dest='playlist', action='store', required=True, help='Youtube playlist id to get videos from')
 parser.add_argument('-f', '--folder', dest='folder', action='store', required=False, help='Working directory, where to download and store files, absolute path')
 parser.add_argument('-a', '--album', dest='album', action='store', required=False, help='Album name to save tracks with, also makes sync only with album if exist')
+
+linkIdType = parser.add_mutually_exclusive_group()
+linkIdType.add_argument('-p', '--playlist', dest='playlist', action='store', help='Youtube playlist id to get videos from')
+linkIdType.add_argument('-s', '--single', dest='single', action='store', help='Youtube video id to download')
 
 outputDetailLevel = parser.add_mutually_exclusive_group()
 outputDetailLevel.add_argument('-q', '--quiet', dest='quiet', action='store_true', default=False, help='Print out minimum result information, errors')
@@ -58,19 +62,24 @@ def main():
     try:
         clean_temp_dir(temp_working_dir, VIDEO_TEMP_DIR, IMAGE_TEMP_DIR)
         create_temp_dir(temp_working_dir, VIDEO_TEMP_DIR, IMAGE_TEMP_DIR)
-        descr = get_playlist_info(args.key, args.playlist)
-        all_videos = get_videos_from_playlist(args.key, args.playlist)
-        filtered_videos = synchronize_audios(all_videos, working_dir)
-        urls = get_playlist_videos_url(filtered_videos)
+
+        if args.playlist:
+            descr = get_playlist_info(args.key, args.playlist)
+            all_videos = get_videos_from_playlist(args.key, args.playlist)
+            filtered_videos = synchronize_audios(all_videos, working_dir)
+            urls = get_playlist_videos_url(filtered_videos)
+        else:
+            urls = get_single_video_urls(args.single)
+
         download_data_from_video(urls, video_tempdir, image_tempdir)
         last_track_number = get_last_track_number(working_dir=working_dir, album=args.album)
         convert_all_files_to_mp3(working_dir=working_dir, video_tempdir=video_tempdir,
-                                 image_tempdir=image_tempdir, track_number=last_track_number)
-        clean_temp_dir(temp_working_dir, VIDEO_TEMP_DIR, IMAGE_TEMP_DIR)
+                                 image_tempdir=image_tempdir, album=args.album, track_number=last_track_number)
     except Exception as e:
         logging.error('Something went wrong, %s', str(e))
-        clean_temp_dir(temp_working_dir, VIDEO_TEMP_DIR, IMAGE_TEMP_DIR)
         logging.debug(traceback.print_exc())
+    finally:
+        clean_temp_dir(temp_working_dir, VIDEO_TEMP_DIR, IMAGE_TEMP_DIR)
 
 
 if __name__ == '__main__':

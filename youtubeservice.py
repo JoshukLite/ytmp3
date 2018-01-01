@@ -1,7 +1,6 @@
-import json
+import httplib
 import logging
 import os
-import re
 import sys
 
 import pafy
@@ -10,6 +9,8 @@ from util import download_image
 from util import generate_video_title
 from util import get_local_audios
 from util import json_url_open
+
+from util import MAX_ATTEMPT
 
 
 YOUTUBE_API_URL = 'https://content.googleapis.com/youtube/v3'
@@ -94,9 +95,9 @@ def get_videos_from_playlist(api_key, playlist_id):
             for json_video in json_videos:
                 videos.append(json_video)
 
-            try:
-                next_page_token = json_response[NEXT_PAGE_TOKEN]
-            except:
+            next_page_token = json_response.get(NEXT_PAGE_TOKEN)
+
+            if next_page_token is None:
                 done = True
 
     except Exception as ex:
@@ -120,7 +121,8 @@ def synchronize_audios(videos, working_dir):
 
         for cloud_video in videos:
             audio_title = unicode(cloud_video.get(SNIPPET).get(TITLE))
-            audio_id = cloud_video.get(ID)
+            content_details_json = cloud_video.get(CONTENT_DETAILS)
+            audio_id = content_details_json.get(VIDEO_ID)
 
             audio_title_full = generate_video_title(audio_title, audio_id)
             if audio_title_full not in local_audios:
@@ -146,16 +148,25 @@ def get_playlist_videos_url(videos_as_json):
             content_details_json = video.get(CONTENT_DETAILS)
 
             video_url = content_details_json.get(VIDEO_ID)
-            video_id = video.get(ID)
 
-            if video_url is not None and video_id is not None:
-                urls.append({VIDEO_ID: video_url, ID: video_id})
+            if video_url is not None:
+                urls.append({VIDEO_ID: video_url})
 
     except Exception as ex:
-        logging.error('An error occured while retrieving videos url from response')
+        logging.error('An error occurred while retrieving videos url from response')
         raise ex
 
     return urls
+
+
+def get_single_video_urls(video_url):
+    logging.info('Preparing video url')
+
+    url = [
+        {VIDEO_ID: video_url}
+    ]
+
+    return url
 
 
 def download_data_from_video(video_id_list, video_dir, image_dir):
@@ -168,8 +179,10 @@ def download_data_from_video(video_id_list, video_dir, image_dir):
     logging.info('Using "%s" to store downloaded audios', os.path.abspath(video_dir))
 
     try:
-        downloaded = 0
-        for video_id in video_id_list:
+        attempt = 0
+        i = 0
+        while i < len(video_id_list):
+            video_id = video_id_list[i]
             url = YOUTUBE_WATCH_URL.format(video_id.get(VIDEO_ID))
             logging.debug('Working with url: %s', url)
 
@@ -177,21 +190,28 @@ def download_data_from_video(video_id_list, video_dir, image_dir):
 
             best_audio = video.getbestaudio()
 
-            video_title = generate_video_title(video.title, video_id.get(ID), best_audio.extension)
+            video_title = generate_video_title(video.title, video_id.get(VIDEO_ID), best_audio.extension)
 
             logging.info('Video title: %s', video_title)
             logging.info('Audio bitrate: %s,  extension: %s, filesize: %s', best_audio.bitrate,
                          best_audio.extension, best_audio.get_filesize())
 
             logging.debug('Downloading video for url: %s', url)
-            best_audio.download(filepath=os.path.join(video_dir, video_title))
+            try:
+                best_audio.download(filepath=os.path.join(video_dir, video_title))
+            except httplib.BadStatusLine as bsl:
+                attempt += 1
+                if attempt > MAX_ATTEMPT:
+                    raise bsl
+                logging.info("Error while downloading video, performing {0} attempt".format(attempt))
 
             thumbnail_url = video.bigthumbhd
             download_image(image_dir, thumbnail_url, video_title)
 
-            downloaded += 1
+            i += 1
+            attempt = 0
 
-        logging.info('Finished downloading audio from all videos, downloaded videos = %d', downloaded)
+        logging.info('Finished downloading audio from all videos, downloaded videos = %d', len(video_id_list))
 
     except Exception as ex:
         logging.error('An error occurred while downloading audios from videos')

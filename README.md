@@ -48,21 +48,23 @@ Information about **ffmpeg and libav** was taken from [pydub](https://github.com
 Required arguments:
 
 * -k --key : mandatory to access Youtube's data API. You can get one from there: https://console.developers.google.com
-* -p --playlist : youtube playlist id. You can get it from playlist url
+* -p --playlist | -s --single : youtube playlist id or video id.
 
 To display the full list of supported arguments, use '-h' or '--help'.
 
 ```bash
 python youtubesync.py -h
-usage: youtubesync.py [-h] -k KEY -p PLAYLIST [-f FOLDER] [-q | -v | -d]
+usage: youtubesync.py [-h] -k KEY [-p PLAYLIST | -s SINGLE] [-f FOLDER] [-a ALBUM] [-q | -v | -d]
 
 This script finds all videos from Youtube given playlist, downloads it and converts to mp3.
 
-optional arguments:
+arguments:
   -h, --help            show this help message and exit
   -k KEY, --key KEY     Google Data API key.
   -p PLAYLIST, --playlist PLAYLIST
                         Youtube playlist id to get videos from
+  -s SINGLE, --single SINGLE
+                        Youtube video id to download
   -f FOLDER, --folder FOLDER
                         Working directory, where to download and store files,
                         absolute path
@@ -77,5 +79,10 @@ optional arguments:
 Download all audios from videos from given playlist to specified folder.
 
 ```bash
-python youtubesync.py -k ... -p PLblLnDz3Peug_HDuo1mbRrqwCOl1ABa13 -f 'C:\folder\to\download' -v
+python youtubesync.py -k ... -p PLblLnDz3Peug_HDuo1mbRrqwCOl1ABa13 -f 'C:\folder\to\download' -a from_youtube -v
+```
+
+Download audio from specific video to specified forlder
+```bash
+python youtubesync.py -k ... -v TpIdb1ErbKk -f 'C:\folder\to\download' -v
 ```
