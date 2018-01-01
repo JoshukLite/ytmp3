@@ -78,11 +78,14 @@ def convert_all_files_to_mp3(working_dir, album=None, track_number=0):
 def convert_to_mp3(audio_file, working_dir, album_name=None, track_number=None):
     logging.info('Converting %s', audio_file)
 
+    video_tempdir = os.path.join(working_dir, constants.ROOT_TEMP_DIR, constants.VIDEO_TEMP_DIR)
     cover_dir = os.path.join(working_dir, constants.ROOT_TEMP_DIR, constants.IMAGE_TEMP_DIR)
 
     filename, extension = get_filename_with_extension(audio_file)
 
-    audio = AudioSegment.from_file(audio_file, extension)
+    abs_audio_file = os.path.join(video_tempdir, audio_file)
+
+    audio = AudioSegment.from_file(abs_audio_file, extension)
 
     abs_filename = os.path.join(working_dir, filename + '.mp3')
 

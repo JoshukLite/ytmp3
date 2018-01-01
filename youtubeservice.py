@@ -170,53 +170,40 @@ def get_single_video_urls(video_url):
     return url
 
 
-def download_data_from_video(video_id_list, root):
-    if len(video_id_list) < 1:
-        logging.info("No audios to download. All items are synchronized.")
-        sys.exit()
+def download_data_from_video(video_id, root):
 
     video_dir = os.path.join(root, constants.ROOT_TEMP_DIR, constants.VIDEO_TEMP_DIR)
     image_dir = os.path.join(root, constants.ROOT_TEMP_DIR, constants.IMAGE_TEMP_DIR)
 
-    logging.info('Downloading audio from all videos')
-
-    logging.info('Using "%s" to store downloaded audios', os.path.abspath(video_dir))
-
     try:
+        url = YOUTUBE_WATCH_URL.format(video_id.get(VIDEO_ID))
+        logging.debug('Working with url: %s', url)
+
+        video = pafy.new(url)
+
+        best_audio = video.getbestaudio()
+
+        video_title = generate_video_title(video.title, video_id.get(VIDEO_ID), best_audio.extension)
+
+        logging.info('Video title: %s', video_title)
+        logging.info('Audio bitrate: %s,  extension: %s, filesize: %s', best_audio.bitrate,
+                     best_audio.extension, best_audio.get_filesize())
+
+        logging.debug('Downloading video for url: %s', url)
         attempt = 0
-        i = 0
-        while i < len(video_id_list):
-            video_id = video_id_list[i]
-            url = YOUTUBE_WATCH_URL.format(video_id.get(VIDEO_ID))
-            logging.debug('Working with url: %s', url)
+        try:
+            best_audio.download(filepath=os.path.join(video_dir, video_title))
+        except httplib.BadStatusLine as bsl:
+            attempt += 1
+            if attempt > MAX_ATTEMPT:
+                raise bsl
+            logging.info("Error while downloading video, performing {0} attempt".format(attempt))
 
-            video = pafy.new(url)
-
-            best_audio = video.getbestaudio()
-
-            video_title = generate_video_title(video.title, video_id.get(VIDEO_ID), best_audio.extension)
-
-            logging.info('Video title: %s', video_title)
-            logging.info('Audio bitrate: %s,  extension: %s, filesize: %s', best_audio.bitrate,
-                         best_audio.extension, best_audio.get_filesize())
-
-            logging.debug('Downloading video for url: %s', url)
-            try:
-                best_audio.download(filepath=os.path.join(video_dir, video_title))
-            except httplib.BadStatusLine as bsl:
-                attempt += 1
-                if attempt > MAX_ATTEMPT:
-                    raise bsl
-                logging.info("Error while downloading video, performing {0} attempt".format(attempt))
-
-            thumbnail_url = video.bigthumbhd
-            download_image(image_dir, thumbnail_url, video_title)
-
-            i += 1
-            attempt = 0
-
-        logging.info('Finished downloading audio from all videos, downloaded videos = %d', len(video_id_list))
+        thumbnail_url = video.bigthumbhd
+        download_image(image_dir, thumbnail_url, video_title)
 
     except Exception as ex:
         logging.error('An error occurred while downloading audios from videos')
         raise ex
+
+    return video_title

@@ -1,8 +1,8 @@
 import argparse
-import constants
 import logging
 import os
 import re
+import sys
 import traceback
 
 from youtubeservice import download_data_from_video
@@ -14,7 +14,7 @@ from youtubeservice import synchronize_audios
 
 from util import clean_temp_dir
 from util import create_temp_dir
-from util import convert_all_files_to_mp3
+from util import convert_to_mp3
 from util import get_last_track_number
 
 
@@ -64,9 +64,20 @@ def main():
         else:
             urls = get_single_video_urls(args.single)
 
-        download_data_from_video(urls, working_dir)
+        if len(urls) < 1:
+            logging.info("No audios to download. All items are synchronized.")
+            sys.exit()
+
         last_track_number = get_last_track_number(working_dir=working_dir, album=args.album)
-        convert_all_files_to_mp3(working_dir=working_dir, album=args.album, track_number=last_track_number)
+
+        logging.info('Downloading audio from all videos')
+
+        for url in urls:
+            last_track_number += 1
+            audio = download_data_from_video(url, working_dir)
+            convert_to_mp3(audio, working_dir, args.album, last_track_number)
+
+        logging.info('Finished downloading audio from all videos, downloaded videos = %d', len(urls))
     except Exception as e:
         logging.error('Something went wrong, %s', str(e))
         logging.debug(traceback.print_exc())
