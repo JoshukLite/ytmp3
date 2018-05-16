@@ -2,16 +2,14 @@ import constants
 import httplib
 import logging
 import os
-import sys
 
 import pafy
 
-from util import download_image
+from downloader.ytdl import YtdlMedia
+from util import convert_to_mp3
 from util import generate_video_title
 from util import get_local_audios
 from util import json_url_open
-
-from util import MAX_ATTEMPT
 
 
 YOUTUBE_API_URL = 'https://content.googleapis.com/youtube/v3'
@@ -172,38 +170,34 @@ def get_single_video_urls(video_url):
 
 def download_data_from_video(video_id, root):
 
-    video_dir = os.path.join(root, constants.ROOT_TEMP_DIR, constants.VIDEO_TEMP_DIR)
-    image_dir = os.path.join(root, constants.ROOT_TEMP_DIR, constants.IMAGE_TEMP_DIR)
+    temp_dir = os.path.join(root, constants.ROOT_TEMP_DIR)
 
     try:
-        url = YOUTUBE_WATCH_URL.format(video_id.get(VIDEO_ID))
+        url = YOUTUBE_WATCH_URL.format(video_id)
         logging.debug('Working with url: %s', url)
 
-        video = pafy.new(url)
+        video = YtdlMedia(url, temp_dir)
 
-        best_audio = video.getbestaudio()
-
-        video_title = generate_video_title(video.title, video_id.get(VIDEO_ID), best_audio.extension)
-
-        logging.info('Video title: %s', video_title)
-        logging.info('Audio bitrate: %s,  extension: %s, filesize: %s', best_audio.bitrate,
-                     best_audio.extension, best_audio.get_filesize())
-
+        logging.info('Video title: %s', video.title)
         logging.debug('Downloading video for url: %s', url)
-        attempt = 0
-        try:
-            best_audio.download(filepath=os.path.join(video_dir, video_title))
-        except httplib.BadStatusLine as bsl:
-            attempt += 1
-            if attempt > MAX_ATTEMPT:
-                raise bsl
-            logging.info("Error while downloading video, performing {0} attempt".format(attempt))
 
-        thumbnail_url = video.bigthumbhd
-        download_image(image_dir, thumbnail_url, video_title)
+        video.download_audio()
+
+        video.download_thumb()
 
     except Exception as ex:
         logging.error('An error occurred while downloading audios from videos')
         raise ex
 
-    return video_title
+    return video.title
+
+
+def save_mp3(urls, working_dir, album=None, track_number=0):
+    logging.info('Downloading and converting files to mp3, working directory - "%s"', os.path.abspath(working_dir))
+
+    for url in urls:
+        track_number += 1
+        title = download_data_from_video(url[VIDEO_ID], working_dir)
+        convert_to_mp3(title, url[VIDEO_ID], working_dir, album, track_number)
+
+    logging.info('Finished downloading and converting audio from all videos, downloaded videos = %d', len(urls))

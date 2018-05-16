@@ -11,18 +11,19 @@ from pydub import AudioSegment
 
 # supported_extensions = ['webm', 'm4a', 'wav']
 special_chars = ['<', '>', ':', '"', '\'', '/', '\\', '|', '?', '*', '.']
-MAX_ATTEMPT = 5
 
 
-def get_local_audios(dir):
+def get_local_audios(working_dir):
     logging.info("Gethering all local audios from '%s'", dir)
+
+    working_dir = os.path.join(working_dir, '')
 
     local_audios = set()
 
-    os.chdir(dir)
     # get only mp3 files
-    for local_audio in glob.glob(u'*.mp3'):
-        filename, extension = get_filename_with_extension(local_audio)
+    for local_audio in glob.glob(u'{0}/*.mp3'.format(working_dir)):
+        filename_only = local_audio[len(working_dir):]
+        filename, extension = get_filename_with_extension(filename_only)
         local_audios.add(filename)
 
     return local_audios
@@ -31,8 +32,7 @@ def get_local_audios(dir):
 def get_last_track_number(working_dir, album=None):
     logging.info('Searching for last track number in album')
 
-    os.chdir(working_dir)
-    files = glob.glob(u'*.mp3')
+    files = glob.glob(u'{0}/*.mp3'.format(working_dir))
     if album:
         max_track_number = 0
         for audio in files:
@@ -60,34 +60,20 @@ def get_last_track_number(working_dir, album=None):
     return max_track_number
 
 
-def convert_all_files_to_mp3(working_dir, album=None, track_number=0):
-    logging.info('Converting files to mp3, working directory - "%s"', os.path.abspath(working_dir))
-
-    video_tempdir = os.path.join(working_dir, constants.ROOT_TEMP_DIR, constants.VIDEO_TEMP_DIR)
-
-    os.chdir(video_tempdir)
-    files = glob.glob(u'*.*')
-    files.sort(key=os.path.getmtime)
-    for audio in files:
-        track_number += 1
-        convert_to_mp3(audio, working_dir, album, track_number)
-
-    logging.info('Finished converting files to mp3')
-
-
-def convert_to_mp3(audio_file, working_dir, album_name=None, track_number=None):
-    logging.info('Converting %s', audio_file)
+def convert_to_mp3(audio_title, video_id, working_dir, album_name=None, track_number=None):
+    logging.info('Converting %s', audio_title)
 
     video_tempdir = os.path.join(working_dir, constants.ROOT_TEMP_DIR, constants.VIDEO_TEMP_DIR)
     cover_dir = os.path.join(working_dir, constants.ROOT_TEMP_DIR, constants.IMAGE_TEMP_DIR)
 
-    filename, extension = get_filename_with_extension(audio_file)
+    raw_audio_path_name = os.path.join(video_tempdir, video_id)
+    raw_audio_path = glob.glob('{0}.*'.format(raw_audio_path_name))[0]
 
-    abs_audio_file = os.path.join(video_tempdir, audio_file)
+    filename, extension = get_filename_with_extension(raw_audio_path)
 
-    audio = AudioSegment.from_file(abs_audio_file, extension)
+    audio = AudioSegment.from_file(raw_audio_path, extension)
 
-    abs_filename = os.path.join(working_dir, filename + '.mp3')
+    abs_filename = os.path.join(working_dir, generate_video_title(audio_title, video_id, 'mp3'))
 
     audio_tags = dict()
 
@@ -95,13 +81,13 @@ def convert_to_mp3(audio_file, working_dir, album_name=None, track_number=None):
         audio_tags['album'] = album_name
         audio_tags['track'] = track_number
 
-    cover_name = get_image_name(audio_file)
-    cover_path_name = os.path.join(cover_dir, str(cover_name))
-    image_path = glob.glob('{}.*'.format(cover_path_name))[0]
+    cover_path_name = os.path.join(cover_dir, str(video_id))
+    image_path = glob.glob('{0}.*'.format(cover_path_name))[0]
 
     audio.export(abs_filename, format='mp3', tags=audio_tags, cover=image_path)
 
 
+# root - absolute path to working directory
 def create_temp_dir(root):
     logging.info('Creating temp dirs')
 
@@ -117,6 +103,7 @@ def create_temp_dir(root):
     logging.info('Finished creating temp dirs')
 
 
+# root - absolute path to working directory
 def clean_temp_dir(root):
     logging.info('Cleaning temp files')
 
@@ -124,14 +111,13 @@ def clean_temp_dir(root):
     temp_subdirs = get_temp_subdirs()
 
     if os.path.exists(root_temp):
-        os.chdir(root_temp)
 
         for temp_subdir in temp_subdirs:
-            for temp_file in glob.glob(u'./{}/*.*'.format(temp_subdir)):
+            temp_subdir_path = os.path.join(root_temp, temp_subdir)
+            for temp_file in glob.glob(u'{0}/*.*'.format(temp_subdir_path)):
                 os.remove(temp_file)
-            os.rmdir(temp_subdir)
+            os.rmdir(temp_subdir_path)
 
-        os.chdir('..')
         os.rmdir(root_temp)
 
         logging.info('Finished cleaning temp files')
@@ -139,8 +125,8 @@ def clean_temp_dir(root):
         logging.info('Skipping ...')
 
 
-def get_filename_with_extension(file):
-    filename, dot, extension = file.partition('.')
+def get_filename_with_extension(filename):
+    filename, dot, extension = filename.partition('.')
     return filename, extension
 
 
@@ -171,27 +157,6 @@ def json_url_open(url):
     logging.debug('Response as json: %s', json.dumps(json_response, indent=4))
 
     return json_response
-
-
-def download_image(temp_dir, url, video_full_name):
-    image_full_name = url[url.rfind('/') + 1:]
-
-    url_image_name, image_extension = get_filename_with_extension(image_full_name)
-
-    image_name = get_image_name(video_full_name)
-    new_image_name = '{}.{}'.format(image_name, image_extension)
-
-    done = False
-    attempt = 0
-    while not done:
-        try:
-            urllib.urlretrieve(url, os.path.join(temp_dir, new_image_name))
-            done = True
-        except httplib.BadStatusLine as bsl:
-            attempt += 1
-            if attempt > MAX_ATTEMPT:
-                raise bsl
-            logging.info("Error while downloading thumbnail, performing {0} attempt".format(attempt))
 
 
 def get_image_name(str_input):

@@ -5,7 +5,7 @@ import re
 import sys
 import traceback
 
-from youtubeservice import download_data_from_video
+from youtubeservice import save_mp3
 from youtubeservice import get_playlist_info
 from youtubeservice import get_playlist_videos_url
 from youtubeservice import get_single_video_urls
@@ -14,7 +14,6 @@ from youtubeservice import synchronize_audios
 
 from util import clean_temp_dir
 from util import create_temp_dir
-from util import convert_to_mp3
 from util import get_last_track_number
 
 
@@ -46,7 +45,7 @@ else:
     LOG_LEVEL = logging.WARN
 
 if args.folder is None:
-    working_dir = os.path.abspath(__file__)
+    working_dir = os.path.dirname(os.path.abspath(__file__))
 else:
     working_dir = re.sub('["|\']+', '', args.folder)
 
@@ -69,15 +68,7 @@ def main():
             sys.exit()
 
         last_track_number = get_last_track_number(working_dir=working_dir, album=args.album)
-
-        logging.info('Downloading audio from all videos')
-
-        for url in urls:
-            last_track_number += 1
-            audio = download_data_from_video(url, working_dir)
-            convert_to_mp3(audio, working_dir, args.album, last_track_number)
-
-        logging.info('Finished downloading audio from all videos, downloaded videos = %d', len(urls))
+        save_mp3(urls, working_dir, args.album, last_track_number)
     except Exception as e:
         logging.error('Something went wrong, %s', str(e))
         logging.debug(traceback.print_exc())
