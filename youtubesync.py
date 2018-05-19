@@ -23,7 +23,7 @@ parser.add_argument('-k', '--key', dest='key', action='store', required=False, h
 parser.add_argument('-f', '--folder', dest='folder', action='store', required=False, help='Working directory, where to download and store files, absolute path')
 parser.add_argument('-a', '--album', dest='album', action='store', required=False, help='Album name to save tracks with, also makes sync only with album if exist')
 
-linkIdType = parser.add_mutually_exclusive_group()
+linkIdType = parser.add_mutually_exclusive_group(required=True)
 linkIdType.add_argument('-p', '--playlist', dest='playlist', action='store', help='Youtube playlist id to get videos from')
 linkIdType.add_argument('-s', '--single', dest='single', action='store', help='Youtube video id to download')
 

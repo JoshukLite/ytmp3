@@ -54,7 +54,7 @@ To display the full list of supported arguments, use '-h' or '--help'.
 
 ```bash
 python youtubesync.py -h
-usage: youtubesync.py [-h] -k KEY [-p PLAYLIST | -s SINGLE] [-f FOLDER] [-a ALBUM] [-q | -v | -d]
+usage: youtubesync.py [-h] [-k KEY] [-f FOLDER] [-a ALBUM] (-p PLAYLIST | -s SINGLE) [-q | -v | -d]
 
 This script finds all videos from Youtube given playlist, downloads it and converts to mp3.
 
@@ -82,7 +82,12 @@ Download all audios from videos from given playlist to specified folder.
 python youtubesync.py -k ... -p PLblLnDz3Peug_HDuo1mbRrqwCOl1ABa13 -f 'C:\folder\to\download' -a from_youtube -v
 ```
 
-Download audio from specific video to specified forlder
+Download audio from specific video (using url) to specified forlder
 ```bash
-python youtubesync.py -k ... -v TpIdb1ErbKk -f 'C:\folder\to\download' -v
+python youtubesync.py -s https://www.youtube.com/watch?v=Qc_3MWQz9EM -f 'C:\folder\to\download' -v
+```
+
+Download audio from specific video (using video id) to current working directory
+```bash
+python youtubesync.py -s Qc_3MWQz9EM -v
 ```
