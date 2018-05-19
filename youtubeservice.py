@@ -1,14 +1,12 @@
 import constants
-import httplib
 import logging
 import os
-
-import pafy
 
 from downloader.ytdl import YtdlMedia
 from util import convert_to_mp3
 from util import generate_video_title
 from util import get_local_audios
+from util import get_url_params
 from util import json_url_open
 
 
@@ -136,7 +134,7 @@ def synchronize_audios(videos, working_dir):
     return audios_to_download
 
 
-def get_playlist_videos_url(videos_as_json):
+def get_playlist_video_info(videos_as_json):
     logging.info('Retrieving videos urls from json response')
 
     urls = []
@@ -161,11 +159,18 @@ def get_playlist_videos_url(videos_as_json):
 def get_single_video_urls(video_url):
     logging.info('Preparing video url')
 
-    url = [
-        {VIDEO_ID: video_url}
-    ]
+    if video_url.startswith("http"):
+        params = get_url_params(video_url)
 
-    return url
+        if not params.get('v'):
+            logging.error("Could not find video id in requested url, please check url passed into arguments")
+            exit()
+
+        video_info = [{VIDEO_ID: params.get('v')}]
+    else:
+        video_info = [{VIDEO_ID: video_url}]
+
+    return video_info
 
 
 def download_data_from_video(video_id, root):
@@ -192,12 +197,19 @@ def download_data_from_video(video_id, root):
     return video.title
 
 
-def save_mp3(urls, working_dir, album=None, track_number=0):
+def save_mp3(video_info_list, working_dir, album=None, track_number=0):
     logging.info('Downloading and converting files to mp3, working directory - "%s"', os.path.abspath(working_dir))
 
-    for url in urls:
-        track_number += 1
-        title = download_data_from_video(url[VIDEO_ID], working_dir)
-        convert_to_mp3(title, url[VIDEO_ID], working_dir, album, track_number)
+    for video_info in video_info_list:
+        try:
+            track_number += 1
+            title = download_data_from_video(video_info[VIDEO_ID], working_dir)
+            convert_to_mp3(title, video_info[VIDEO_ID], working_dir, album, track_number)
+        except Exception as e:
+            logging.error('An error occurred while downloading or converting video - "%s". Skipping it',
+                          video_info[VIDEO_ID])
+            logging.exception(e)
 
-    logging.info('Finished downloading and converting audio from all videos, downloaded videos = %d', len(urls))
+
+    logging.info('Finished downloading and converting audio from all videos, downloaded videos = %d',
+                 len(video_info_list))

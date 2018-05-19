@@ -5,6 +5,8 @@ import os
 import urllib
 import urlparse
 
+from util import get_url_params
+
 
 class BaseMedia(object):
 
@@ -45,9 +47,8 @@ class BaseMedia(object):
                 logging.info("Error while downloading thumbnail, performing {0} attempt".format(attempt))
 
     def _prepare_video_id(self):
-        parsed = urlparse.urlparse(self.url)
-        query_params = urlparse.parse_qs(parsed.query)
-        self._video_id = query_params['v'][0]
+        params = get_url_params(self.url)
+        self._video_id = params['v']
 
     @property
     def location(self):

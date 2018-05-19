@@ -7,7 +7,7 @@ import traceback
 
 from youtubeservice import save_mp3
 from youtubeservice import get_playlist_info
-from youtubeservice import get_playlist_videos_url
+from youtubeservice import get_playlist_video_info
 from youtubeservice import get_single_video_urls
 from youtubeservice import get_videos_from_playlist
 from youtubeservice import synchronize_audios
@@ -19,7 +19,7 @@ from util import get_last_track_number
 
 parser = argparse.ArgumentParser(description='This script finds all videos from Youtube given playlist')
 
-parser.add_argument('-k', '--key', dest='key', action='store', required=True, help='Google Data API key.')
+parser.add_argument('-k', '--key', dest='key', action='store', required=False, help='Google Data API key.')
 parser.add_argument('-f', '--folder', dest='folder', action='store', required=False, help='Working directory, where to download and store files, absolute path')
 parser.add_argument('-a', '--album', dest='album', action='store', required=False, help='Album name to save tracks with, also makes sync only with album if exist')
 
@@ -56,19 +56,22 @@ def main():
         create_temp_dir(working_dir)
 
         if args.playlist:
+            if not args.key:
+                logging.error("Please specify Google Data API key when you're using playlist downloader")
+                exit()
             descr = get_playlist_info(args.key, args.playlist)
             all_videos = get_videos_from_playlist(args.key, args.playlist)
             filtered_videos = synchronize_audios(all_videos, working_dir)
-            urls = get_playlist_videos_url(filtered_videos)
+            video_info_list = get_playlist_video_info(filtered_videos)
         else:
-            urls = get_single_video_urls(args.single)
+            video_info_list = get_single_video_urls(args.single)
 
-        if len(urls) < 1:
+        if len(video_info_list) < 1:
             logging.info("No audios to download. All items are synchronized.")
             sys.exit()
 
         last_track_number = get_last_track_number(working_dir=working_dir, album=args.album)
-        save_mp3(urls, working_dir, args.album, last_track_number)
+        save_mp3(video_info_list, working_dir, args.album, last_track_number)
     except Exception as e:
         logging.error('Something went wrong, %s', str(e))
         logging.debug(traceback.print_exc())

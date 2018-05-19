@@ -1,11 +1,11 @@
 import constants
 import glob
-import httplib
 import json
 import logging
 import mutagen
 import os
 import urllib
+import urlparse
 
 from pydub import AudioSegment
 
@@ -58,6 +58,36 @@ def get_last_track_number(working_dir, album=None):
         max_track_number = 0
 
     return max_track_number
+
+
+def get_filename_with_extension(filename):
+    filename, dot, extension = filename.partition('.')
+    return filename, extension
+
+
+def get_image_name(str_input):
+    return hash(str_input)
+
+
+def get_temp_subdirs():
+    temp_subdirs = [
+        constants.IMAGE_TEMP_DIR,
+        constants.VIDEO_TEMP_DIR
+    ]
+
+    return temp_subdirs
+
+
+def get_url_params(url):
+    parameters = dict()
+
+    parse_res = urlparse.urlparse(url)
+    if parse_res.query:
+        qsl_res = urlparse.parse_qsl(parse_res.query)
+        for param in qsl_res:
+            parameters[param[0]] = param[1]
+
+    return parameters
 
 
 def convert_to_mp3(audio_title, video_id, working_dir, album_name=None, track_number=None):
@@ -114,9 +144,10 @@ def clean_temp_dir(root):
 
         for temp_subdir in temp_subdirs:
             temp_subdir_path = os.path.join(root_temp, temp_subdir)
-            for temp_file in glob.glob(u'{0}/*.*'.format(temp_subdir_path)):
-                os.remove(temp_file)
-            os.rmdir(temp_subdir_path)
+            if os.path.exists(temp_subdir_path):
+                for temp_file in glob.glob(u'{0}/*.*'.format(temp_subdir_path)):
+                    os.remove(temp_file)
+                os.rmdir(temp_subdir_path)
 
         os.rmdir(root_temp)
 
@@ -125,13 +156,8 @@ def clean_temp_dir(root):
         logging.info('Skipping ...')
 
 
-def get_filename_with_extension(filename):
-    filename, dot, extension = filename.partition('.')
-    return filename, extension
-
-
 def generate_video_title(video_title, video_id, extension=None):
-    # use unicode video title (pafy can't recognize this by default) + videoId to avoid duplicate errors
+    # use unicode video title + videoId to avoid duplicate errors
     video_title = unicode(video_title) + ' [{}]'.format(video_id)
 
     for char in special_chars:
@@ -157,16 +183,3 @@ def json_url_open(url):
     logging.debug('Response as json: %s', json.dumps(json_response, indent=4))
 
     return json_response
-
-
-def get_image_name(str_input):
-    return hash(str_input)
-
-
-def get_temp_subdirs():
-    temp_subdirs = [
-        constants.IMAGE_TEMP_DIR,
-        constants.VIDEO_TEMP_DIR
-    ]
-
-    return temp_subdirs
