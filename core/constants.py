@@ -3,18 +3,22 @@ from youtube_dl.utils import DateRange
 # general
 MAX_ATTEMPT = 5
 
+# supported converting audio formats
+AUDIO_FORMATS = ['aac', 'flac', 'mp3', 'm4a', 'opus', 'vorbis', 'wav']
+
 # urls
 HD_THUMB_URL_FRMT = 'http://i.ytimg.com/vi/{0}/hqdefault.jpg'
 
 # temporary directories names
-ROOT_TEMP_DIR = 'temp'
+ROOT_TEMP_DIR = 'ytmp3_tmp'
 VIDEO_TEMP_DIR = 'video'
+AUDIO_TEMP_DIR = 'audio'
 IMAGE_TEMP_DIR = 'image'
 
 # ytdl output format
-YTDL_OUTP_FRMT = "%(id)s.%(ext)s"
+YTDL_OUTP_FRMT = u"%(id)s.%(ext)s"
 # result output format
-RES_OUTP_FRMT = "{0} [{1}].{2}"
+RES_OUTP_FRMT = u"{0} [{1}].{2}"
 
 # ytdl default options
 YTDL_OPTS = {
@@ -26,8 +30,8 @@ YTDL_OPTS = {
     'ap_mso': None,
     'ap_username': None,
     'ap_password': None,
-    'quiet': False,
-    'no_warnings': False,
+    'quiet': True,
+    'no_warnings': True,
     'forceurl': False,
     'forcetitle': False,
     'forceid': False,
@@ -100,7 +104,7 @@ YTDL_OPTS = {
     'download_archive': None,
     'cookiefile': None,
     'nocheckcertificate': False,
-    'prefer_insecure': None,
+    'prefer_insecure': True,
     'proxy': None,
     'socket_timeout': None,
     'bidi_workaround': None,
@@ -109,7 +113,7 @@ YTDL_OPTS = {
     'include_ads': None,
     'default_search': None,
     'youtube_include_dash_manifest': True,
-    'encoding': None, # or utf-8
+    'encoding': None,
     'extract_flat': False,
     'mark_watched': False,
     'merge_output_format': None,
@@ -136,7 +140,6 @@ YTDL_OPTS = {
     'geo_bypass': True,
     'geo_bypass_country': None,
     'geo_bypass_ip_block': None,
-    # just for deprecation check
     'autonumber': None,
     'usetitle': None,
 }

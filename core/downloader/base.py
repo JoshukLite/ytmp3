@@ -1,11 +1,10 @@
-import constants
 import httplib
 import logging
 import os
 import urllib
-import urlparse
 
-from util import get_url_params
+import core.constants as constants
+import core.util as util
 
 
 class BaseMedia(object):
@@ -18,11 +17,6 @@ class BaseMedia(object):
         self._title = None
         self._video_id = None
 
-        self.fetch_info()
-
-    def fetch_info(self):
-        raise NotImplementedError
-
     def download_video(self):
         raise NotImplementedError
 
@@ -31,8 +25,9 @@ class BaseMedia(object):
 
     def download_thumb(self):
         image_url = constants.HD_THUMB_URL_FRMT.format(self.video_id)
+        thumb_ext = 'jpg'
 
-        new_image_name = '{}.{}'.format(self.video_id, 'jpg')
+        new_image_name = '{}.{}'.format(self.video_id, thumb_ext)
 
         done = False
         attempt = 0
@@ -46,8 +41,15 @@ class BaseMedia(object):
                     raise bsl
                 logging.info("Error while downloading thumbnail, performing {0} attempt".format(attempt))
 
+        res = {
+            'thumb_ext': thumb_ext,
+            'thumb_filename': new_image_name
+        }
+
+        return res
+
     def _prepare_video_id(self):
-        params = get_url_params(self.url)
+        params = util.get_url_params(self.url)
         self._video_id = params['v']
 
     @property

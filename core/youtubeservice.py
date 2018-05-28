@@ -2,12 +2,9 @@ import constants
 import logging
 import os
 
+import util
+
 from downloader.ytdl import YtdlMedia
-from util import convert_to_mp3
-from util import generate_video_title
-from util import get_local_audios
-from util import get_url_params
-from util import json_url_open
 
 
 YOUTUBE_API_URL = 'https://content.googleapis.com/youtube/v3'
@@ -36,7 +33,7 @@ def get_playlist_info(api_key, playlist_id):
     try:
         url = YOUTUBE_PLAYLIST_API_URL.format(api_key, playlist_id)
 
-        json_response = json_url_open(url)
+        json_response = util.json_url_open(url)
 
         logging.debug('Retrieving playlist info')
 
@@ -71,7 +68,7 @@ def get_videos_from_playlist(api_key, playlist_id):
         while not done:
             url = YOUTUBE_PLAYLIST_ITEMS_API_URL.format(api_key, playlist_id, next_page_token)
 
-            json_response = json_url_open(url)
+            json_response = util.json_url_open(url)
 
             results_per_page = json_response.get(PAGE_INFO).get(RESULTS_PER_PAGE)
             total_results = json_response.get(PAGE_INFO).get(TOTAL_RESULTS)
@@ -112,7 +109,7 @@ def synchronize_audios(videos, working_dir):
     audios_to_download = []
 
     try:
-        local_audios = get_local_audios(working_dir)
+        local_audios = util.get_local_audios(working_dir)
 
         logging.debug('Local audios = %d, cloud videos = %d', len(local_audios), len(videos))
 
@@ -121,7 +118,7 @@ def synchronize_audios(videos, working_dir):
             content_details_json = cloud_video.get(CONTENT_DETAILS)
             audio_id = content_details_json.get(VIDEO_ID)
 
-            audio_title_full = generate_video_title(audio_title, audio_id)
+            audio_title_full = util.generate_video_title(audio_title, audio_id)
             if audio_title_full not in local_audios:
                 audios_to_download.append(cloud_video)
 
@@ -160,7 +157,7 @@ def get_single_video_urls(video_url):
     logging.info('Preparing video url')
 
     if video_url.startswith("http"):
-        params = get_url_params(video_url)
+        params = util.get_url_params(video_url)
 
         if not params.get('v'):
             logging.error("Could not find video id in requested url, please check url passed into arguments")
@@ -176,6 +173,7 @@ def get_single_video_urls(video_url):
 def download_data_from_video(video_id, root):
 
     temp_dir = os.path.join(root, constants.ROOT_TEMP_DIR)
+    video_temp_dir = os.path.join(temp_dir, constants.VIDEO_TEMP_DIR)
 
     try:
         url = YOUTUBE_WATCH_URL.format(video_id)
@@ -183,18 +181,23 @@ def download_data_from_video(video_id, root):
 
         video = YtdlMedia(url, temp_dir)
 
-        logging.info('Video title: %s', video.title)
         logging.debug('Downloading video for url: %s', url)
 
-        video.download_audio()
+        result = video.download_audio(post_format='mp3')
 
-        video.download_thumb()
-
+        end_filename = util.generate_video_title(result.get('title'), result.get('id'), result.get('audio_ext'),
+                                                 clean=True)
+        util.copy(os.path.join(video_temp_dir, (video_id + '.' + result.get('audio_ext'))),
+                  os.path.join(root, end_filename),
+                  remove_old=True)
+        result['audio_filename'] = end_filename
+        result_i = video.download_thumb()
+        result.update(result_i)
     except Exception as ex:
         logging.error('An error occurred while downloading audios from videos')
         raise ex
 
-    return video.title
+    return result
 
 
 def save_mp3(video_info_list, working_dir, album=None, track_number=0):
@@ -203,13 +206,19 @@ def save_mp3(video_info_list, working_dir, album=None, track_number=0):
     for video_info in video_info_list:
         try:
             track_number += 1
-            title = download_data_from_video(video_info[VIDEO_ID], working_dir)
-            convert_to_mp3(title, video_info[VIDEO_ID], working_dir, album, track_number)
+
+            result_info = download_data_from_video(video_info[VIDEO_ID], working_dir)
+
+            result_name = util.generate_video_title(result_info.get('title'), result_info.get('id'),
+                                                    result_info.get('audio_ext'), clean=True)
+            audio_path = os.path.join(working_dir, result_name)
+            cover_path = os.path.join(working_dir, constants.ROOT_TEMP_DIR, constants.IMAGE_TEMP_DIR,
+                                      result_info.get('thumb_filename'))
+            util.add_audio_metainfo(audio_path, cover_path=cover_path, track_num=track_number, album=album)
         except Exception as e:
             logging.error('An error occurred while downloading or converting video - "%s". Skipping it',
                           video_info[VIDEO_ID])
             logging.exception(e)
-
 
     logging.info('Finished downloading and converting audio from all videos, downloaded videos = %d',
                  len(video_info_list))

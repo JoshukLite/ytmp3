@@ -5,16 +5,8 @@ import re
 import sys
 import traceback
 
-from youtubeservice import save_mp3
-from youtubeservice import get_playlist_info
-from youtubeservice import get_playlist_video_info
-from youtubeservice import get_single_video_urls
-from youtubeservice import get_videos_from_playlist
-from youtubeservice import synchronize_audios
-
-from util import clean_temp_dir
-from util import create_temp_dir
-from util import get_last_track_number
+import core.util as util
+import core.youtubeservice as youtubeservice
 
 
 parser = argparse.ArgumentParser(description='This script finds all videos from Youtube given playlist')
@@ -52,31 +44,31 @@ else:
 
 def main():
     try:
-        clean_temp_dir(working_dir)
-        create_temp_dir(working_dir)
+        util.clean_temp_dir(working_dir)
+        util.create_temp_dir(working_dir)
 
         if args.playlist:
             if not args.key:
                 logging.error("Please specify Google Data API key when you're using playlist downloader")
                 exit()
-            descr = get_playlist_info(args.key, args.playlist)
-            all_videos = get_videos_from_playlist(args.key, args.playlist)
-            filtered_videos = synchronize_audios(all_videos, working_dir)
-            video_info_list = get_playlist_video_info(filtered_videos)
+            descr = youtubeservice.get_playlist_info(args.key, args.playlist)
+            all_videos = youtubeservice.get_videos_from_playlist(args.key, args.playlist)
+            filtered_videos = youtubeservice.synchronize_audios(all_videos, working_dir)
+            video_info_list = youtubeservice.get_playlist_video_info(filtered_videos)
         else:
-            video_info_list = get_single_video_urls(args.single)
+            video_info_list = youtubeservice.get_single_video_urls(args.single)
 
         if len(video_info_list) < 1:
             logging.info("No audios to download. All items are synchronized.")
             sys.exit()
 
-        last_track_number = get_last_track_number(working_dir=working_dir, album=args.album)
-        save_mp3(video_info_list, working_dir, args.album, last_track_number)
+        last_track_number = util.get_last_track_number(working_dir=working_dir, album=args.album)
+        youtubeservice.save_mp3(video_info_list, working_dir, args.album, last_track_number)
     except Exception as e:
         logging.error('Something went wrong, %s', str(e))
         logging.debug(traceback.print_exc())
     finally:
-        clean_temp_dir(working_dir)
+        util.clean_temp_dir(working_dir)
 
 
 if __name__ == '__main__':

@@ -3,18 +3,58 @@ import glob
 import json
 import logging
 import mutagen
+import mutagen.id3
 import os
+import shutil
 import urllib
 import urlparse
-
-from pydub import AudioSegment
 
 # supported_extensions = ['webm', 'm4a', 'wav']
 special_chars = ['<', '>', ':', '"', '\'', '/', '\\', '|', '?', '*', '.']
 
 
+def add_audio_metainfo(file_path, **kwargs):
+    if not os.path.exists(file_path):
+        raise IOError(u'Add audio metainfo failed, audio file not found - {0}'.format(file_path))
+    if not os.path.isfile(file_path):
+        raise IOError(u'Add audio metainfo failed, specified path is not file - {0}'.format(file_path))
+
+    audio = mutagen.File(file_path)
+
+    cover_path = kwargs.get('cover_path')
+    album = kwargs.get('album')
+    track_num = kwargs.get('track_num')
+
+    # add image cover
+    if cover_path:
+        with open(cover_path, 'rb') as image_file:
+            image_data = image_file.read()
+        audio.tags.add(mutagen.id3.APIC(
+            encoding=3,
+            mime='image/jpeg',
+            type=0,
+            data=image_data
+        ))
+    # add album name
+    if album:
+        audio.tags.add(mutagen.id3.TALB(
+            encoding=3,
+            text=album
+        ))
+    # add track number
+    if track_num:
+        audio.tags.add(mutagen.id3.TRCK(
+            encoding=3,
+            text=str(track_num)
+        ))
+
+    audio.save()
+
+    pass
+
+
 def get_local_audios(working_dir):
-    logging.info("Gethering all local audios from '%s'", dir)
+    logging.info("Gethering all local audios from '%s'", working_dir)
 
     working_dir = os.path.join(working_dir, '')
 
@@ -48,7 +88,7 @@ def get_last_track_number(working_dir, album=None):
             try:
                 if mutagen_track_number:
                     track_number = int(mutagen_track_number.text[0])
-            except:
+            except ValueError:
                 logging.debug('Track number error, must be integer, current value is "%s"', info.get('TRCK'))
                 track_number = 0
 
@@ -61,12 +101,8 @@ def get_last_track_number(working_dir, album=None):
 
 
 def get_filename_with_extension(filename):
-    filename, dot, extension = filename.partition('.')
+    filename, dot, extension = filename.rpartition('.')
     return filename, extension
-
-
-def get_image_name(str_input):
-    return hash(str_input)
 
 
 def get_temp_subdirs():
@@ -90,31 +126,18 @@ def get_url_params(url):
     return parameters
 
 
-def convert_to_mp3(audio_title, video_id, working_dir, album_name=None, track_number=None):
-    logging.info('Converting %s', audio_title)
-
-    video_tempdir = os.path.join(working_dir, constants.ROOT_TEMP_DIR, constants.VIDEO_TEMP_DIR)
-    cover_dir = os.path.join(working_dir, constants.ROOT_TEMP_DIR, constants.IMAGE_TEMP_DIR)
-
-    raw_audio_path_name = os.path.join(video_tempdir, video_id)
-    raw_audio_path = glob.glob('{0}.*'.format(raw_audio_path_name))[0]
-
-    filename, extension = get_filename_with_extension(raw_audio_path)
-
-    audio = AudioSegment.from_file(raw_audio_path, extension)
-
-    abs_filename = os.path.join(working_dir, generate_video_title(audio_title, video_id, 'mp3'))
-
-    audio_tags = dict()
-
-    if album_name:
-        audio_tags['album'] = album_name
-        audio_tags['track'] = track_number
-
-    cover_path_name = os.path.join(cover_dir, str(video_id))
-    image_path = glob.glob('{0}.*'.format(cover_path_name))[0]
-
-    audio.export(abs_filename, format='mp3', tags=audio_tags, cover=image_path)
+def copy(input_file, output_file, remove_old=False):
+    if os.path.exists(input_file):
+        if os.path.isfile(input_file):
+            if not os.path.exists(os.path.dirname(output_file)):
+                os.makedirs(os.path.dirname(output_file))
+            shutil.copy2(input_file, output_file)
+            if remove_old:
+                os.remove(input_file)
+        else:
+            raise IOError('Copy failed, input path is not file - {0}'.format(input_file))
+    else:
+        raise IOError('Copy failed, input file not found - {0}'.format(input_file))
 
 
 # root - absolute path to working directory
@@ -156,12 +179,13 @@ def clean_temp_dir(root):
         logging.info('Skipping ...')
 
 
-def generate_video_title(video_title, video_id, extension=None):
+def generate_video_title(video_title, video_id, extension=None, clean=None):
     # use unicode video title + videoId to avoid duplicate errors
     video_title = unicode(video_title) + ' [{}]'.format(video_id)
 
-    for char in special_chars:
-        video_title = video_title.replace(char, '')
+    if clean:
+        for char in special_chars:
+            video_title = video_title.replace(char, '')
 
     if extension is not None:
         video_title += '.{0}'.format(extension)
