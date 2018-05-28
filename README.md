@@ -1,5 +1,5 @@
 # Description
-**YoutubeToMp3Fetcher** is a command line utility to download all audios from youtube video playlist or single video and convert them to mp3. It uses youtube API for collecting info about playlist, so to work with this script you need api-key (You can get one from there: https://console.developers.google.com). There is no need in API key to download single audio. It also do not creates duplicates of audios, if the same working directory will be specified all files will be synced and script will download and convert only new files in specified playlist. NOTE: script creates directory named as `ytmp3_tmp` to store temporary files, it will clean it at the beginning and in hte end of the program lifecycle.
+**YoutubeToMp3Fetcher** is a command line utility to download all audios from youtube video playlist or single video and convert them to mp3. It uses youtube API for collecting info about playlist, so to work with this script you need api-key (You can get one from there: https://console.developers.google.com). There is no need in API key to download single audio. It also do not creates duplicates of audios, if the same working directory will be specified all files will be synced and script will download and convert only new files in specified playlist. NOTE: script creates directory named as `ytmp3_tmp` in the target directory to store temporary files, it will clean it at the beginning and in hte end of the program lifecycle.
 
 ## Dependencies
 Python package dependencies are listed in 'requirements.txt'. To install it just use 'pip'
@@ -53,8 +53,8 @@ Required arguments:
 To display the full list of supported arguments, use '-h' or '--help'.
 
 ```bash
-python youtubesync.py -h
-usage: youtubesync.py [-h] [-k KEY] [-f FOLDER] [-a ALBUM] (-p PLAYLIST | -s SINGLE) [-q | -v | -d]
+python ytmp3.py -h
+usage: ytmp3.py [-h] [-k KEY] [-f FOLDER] [-a ALBUM] (-p PLAYLIST | -s SINGLE) [-q | -v | -d]
 
 This script finds all videos from Youtube given playlist, downloads it and converts to mp3.
 
