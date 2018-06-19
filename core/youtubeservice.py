@@ -118,7 +118,7 @@ def synchronize_audios(videos, working_dir):
             content_details_json = cloud_video.get(CONTENT_DETAILS)
             audio_id = content_details_json.get(VIDEO_ID)
 
-            audio_title_full = util.generate_video_title(audio_title, audio_id)
+            audio_title_full = util.generate_video_title(audio_title, audio_id, clean=True)
             if audio_title_full not in local_audios:
                 audios_to_download.append(cloud_video)
 
