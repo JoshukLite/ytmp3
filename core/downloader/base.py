@@ -1,10 +1,10 @@
-import httplib
 import logging
 import os
-import urllib
+from http.client import BadStatusLine
+from urllib.request import urlretrieve
 
-import core.constants as constants
-import core.util as util
+from .. import constants
+from .. import util
 
 
 class BaseMedia(object):
@@ -33,9 +33,9 @@ class BaseMedia(object):
         attempt = 0
         while not done:
             try:
-                urllib.urlretrieve(image_url, os.path.join(self.location, constants.IMAGE_TEMP_DIR, new_image_name))
+                urlretrieve(image_url, os.path.join(self.location, constants.IMAGE_TEMP_DIR, new_image_name))
                 done = True
-            except httplib.BadStatusLine as bsl:
+            except BadStatusLine as bsl:
                 attempt += 1
                 if attempt > constants.MAX_ATTEMPT:
                     raise bsl

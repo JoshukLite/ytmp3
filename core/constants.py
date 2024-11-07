@@ -1,4 +1,4 @@
-from youtube_dl.utils import DateRange
+from yt_dlp.utils import DateRange
 
 # general
 MAX_ATTEMPT = 5

@@ -1,4 +1,3 @@
-import constants
 import glob
 import json
 import logging
@@ -6,8 +5,11 @@ import mutagen
 import mutagen.id3
 import os
 import shutil
-import urllib
-import urlparse
+from urllib.parse import urlparse
+from urllib.parse import parse_qsl
+from urllib.request import urlopen
+
+from . import constants
 
 # supported_extensions = ['webm', 'm4a', 'wav']
 special_chars = ['<', '>', ':', '"', '\'', '/', '\\', '|', '?', '*', '.']
@@ -85,12 +87,12 @@ def get_last_track_number(working_dir, album=None):
 
             mutagen_track_number = info.get('TRCK')
 
+            track_number = 0
             try:
                 if mutagen_track_number:
                     track_number = int(mutagen_track_number.text[0])
             except ValueError:
                 logging.debug('Track number error, must be integer, current value is "%s"', info.get('TRCK'))
-                track_number = 0
 
             if audio_album == album and track_number > max_track_number:
                 max_track_number = track_number
@@ -105,21 +107,21 @@ def get_filename_with_extension(filename):
     return filename, extension
 
 
-def get_temp_subdirs():
-    temp_subdirs = [
+def get_temp_sub_dirs():
+    temp_sub_dirs = [
         constants.IMAGE_TEMP_DIR,
         constants.VIDEO_TEMP_DIR
     ]
 
-    return temp_subdirs
+    return temp_sub_dirs
 
 
 def get_url_params(url):
     parameters = dict()
 
-    parse_res = urlparse.urlparse(url)
+    parse_res = urlparse(url)
     if parse_res.query:
-        qsl_res = urlparse.parse_qsl(parse_res.query)
+        qsl_res = parse_qsl(parse_res.query)
         for param in qsl_res:
             parameters[param[0]] = param[1]
 
@@ -144,7 +146,7 @@ def copy(input_file, output_file, remove_old=False):
 def create_temp_dir(root):
     logging.info('Creating temp dirs')
 
-    temp_subdirs = get_temp_subdirs()
+    temp_subdirs = get_temp_sub_dirs()
 
     root_temp = os.path.join(root, constants.ROOT_TEMP_DIR)
 
@@ -161,11 +163,11 @@ def clean_temp_dir(root):
     logging.info('Cleaning temp files')
 
     root_temp = os.path.join(root, constants.ROOT_TEMP_DIR)
-    temp_subdirs = get_temp_subdirs()
+    temp_sub_dirs = get_temp_sub_dirs()
 
     if os.path.exists(root_temp):
 
-        for temp_subdir in temp_subdirs:
+        for temp_subdir in temp_sub_dirs:
             temp_subdir_path = os.path.join(root_temp, temp_subdir)
             if os.path.exists(temp_subdir_path):
                 for temp_file in glob.glob(u'{0}/*.*'.format(temp_subdir_path)):
@@ -181,7 +183,7 @@ def clean_temp_dir(root):
 
 def generate_video_title(video_title, video_id, extension=None, clean=None):
     # use unicode video title + videoId to avoid duplicate errors
-    video_title = unicode(video_title) + ' [{}]'.format(video_id)
+    video_title = video_title + ' [{}]'.format(video_id)
 
     if clean:
         for char in special_chars:
@@ -197,7 +199,7 @@ def json_url_open(url):
     logging.debug('Request to: %s', url)
 
     logging.debug('Performing request')
-    response = urllib.urlopen(url)
+    response = urlopen(url)
 
     logging.debug('Parsing response')
     json_response = json.load(response)

@@ -1,11 +1,10 @@
 import logging
 import os
-import youtube_dl
+import yt_dlp
 
-import core.constants as constants
-import core.util as util
-
-from base import BaseMedia
+from .. import constants
+from .. import util
+from .base import BaseMedia
 
 
 class YtdlMedia(BaseMedia):
@@ -25,7 +24,7 @@ class YtdlMedia(BaseMedia):
         super(YtdlMedia, self).__init__(url, location)
 
     def download_video(self):
-        ytdl = youtube_dl.YoutubeDL(self.opts)
+        ytdl = yt_dlp.YoutubeDL(self.opts)
         ytdl.params.update({'format': 'best', 'quiet': False})
         ytdl.extract_info(self.url, download=True, process=False)
 
@@ -50,14 +49,14 @@ class YtdlMedia(BaseMedia):
             else:
                 raise ValueError('youtube-dl unsupported converting audio format - {0}'.format(post_format))
 
-        ytdl = youtube_dl.YoutubeDL(c_opts)
+        ytdl = yt_dlp.YoutubeDL(c_opts)
         ytdl_res = ytdl.extract_info(self.url, download=True, process=True)
 
         audio_filename_full = ytdl.prepare_filename(ytdl_res)
 
         if post_format:
             nf_format = post_format
-            audio_filename, audio_extension = util.get_filename_with_extension(audio_filename_full)
+            audio_filename, _ = util.get_filename_with_extension(audio_filename_full)
             audio_filename_full = audio_filename + '.' + nf_format
         else:
             # ext

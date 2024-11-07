@@ -1,10 +1,9 @@
-import constants
 import logging
 import os
 
-import util
-
-from downloader.ytdl import YtdlMedia
+from . import constants
+from . import util
+from .downloader.ytdl import YtdlMedia
 
 
 YOUTUBE_API_URL = 'https://content.googleapis.com/youtube/v3'
@@ -114,7 +113,7 @@ def synchronize_audios(videos, working_dir):
         logging.debug('Local audios = %d, cloud videos = %d', len(local_audios), len(videos))
 
         for cloud_video in videos:
-            audio_title = unicode(cloud_video.get(SNIPPET).get(TITLE))
+            audio_title = cloud_video.get(SNIPPET).get(TITLE)
             content_details_json = cloud_video.get(CONTENT_DETAILS)
             audio_id = content_details_json.get(VIDEO_ID)
 
