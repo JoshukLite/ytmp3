@@ -6,7 +6,7 @@ from . import util
 from .downloader.ytdl import YtdlMedia
 
 
-YOUTUBE_API_URL = 'https://content.googleapis.com/youtube/v3'
+YOUTUBE_API_URL = 'https://www.googleapis.com/youtube/v3'
 YOUTUBE_PLAYLIST_API_URL = YOUTUBE_API_URL + '/playlists?part=snippet&key={0}&id={1}'
 YOUTUBE_PLAYLIST_ITEMS_API_URL = YOUTUBE_API_URL + '/playlistItems?part=id,contentDetails,snippet&key={0}&playlistId={1}&pageToken={2}'
 YOUTUBE_PLAYLIST_NEXT_PAGE = '&pageToken={0}'
